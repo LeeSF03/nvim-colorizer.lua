@@ -258,14 +258,25 @@ function M.highlight(bufnr, ns_id, line_start, line_end, ud_opts, buf_local_opts
   end
 
   -- only update css variables when text is changed
-  if buf_local_opts.__event ~= "WinScrolled" and ud_opts.var_fn then
+  if buf_local_opts.__event ~= "WinScrolled" and (ud_opts.var_fn or ud_opts.tailwind) then
+    local variable_parser_opts = {
+      RGB = true,
+      RGBA = true,
+      RRGGBB = true,
+      RRGGBBAA = true,
+      AARRGGBB = true,
+      rgb_fn = true,
+      hsl_fn = true,
+      oklch_fn = true,
+      names = true,
+    }
     table.insert(detach.functions, css.cleanup)
     css.update_variables(
       bufnr,
       0,
       -1,
       nil,
-      matcher.make(ud_opts),
+      matcher.make(variable_parser_opts),
       ud_opts,
       buf_local_opts
     )
