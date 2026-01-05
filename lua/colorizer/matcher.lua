@@ -7,6 +7,7 @@ It uses a trie-based structure to optimize prefix-based parsing.
 local M = {}
 
 local Trie = require("colorizer.trie")
+local css = require("colorizer.css")
 local min, max = math.min, math.max
 
 local parsers = {
@@ -87,7 +88,16 @@ local function compile(matchers, matchers_trie, hooks)
     end
 
     if matchers.color_name_parser then
-      return parsers.color_name(line, i, matchers.color_name_parser)
+      local m_opts = matchers.color_name_parser
+      -- Inject dynamic CSS variables if available
+      local css_vars, css_hash = css.get_variables(bufnr)
+      if css_vars and next(css_vars) then
+         -- Create a new opts table merged with css_vars
+         -- Using setmetatable for performance? or just tbl_extend
+         -- tbl_extend "keep" so we don't overwrite if it exists (it shouldn't)
+         m_opts = vim.tbl_extend("keep", m_opts, { css_vars = { names = css_vars, hash = css_hash } })
+      end
+      return parsers.color_name(line, i, m_opts)
     end
   end
 

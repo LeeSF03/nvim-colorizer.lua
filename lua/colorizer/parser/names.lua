@@ -29,6 +29,7 @@ local namespace_bits = {
   camelcase = 4,
   tailwind_names = 8,
   names_custom = 16,
+  css_vars = 32,
 }
 local namespace_state
 local names_cache
@@ -42,6 +43,7 @@ function M.reset_cache()
       camelcase = {},
       tailwind_names = {},
       names_custom = {},
+      css_vars = {},
     },
     trie = nil,
     -- The `name_minlen` and `name_maxlen` are calculated globally across all namespaces
@@ -158,6 +160,43 @@ local function populate_tailwind_names()
   end
 end
 
+--- Handles CSS variables as Tailwind names
+local function populate_css_vars(css_vars)
+  if not (css_vars.hash and css_vars.names) then
+    return
+  end
+  
+  -- Initialize hash key
+  local hash = css_vars.hash
+  if hash then
+    names_cache.color_map.css_vars[hash] = names_cache.color_map.css_vars[hash] or {}
+  end
+
+  local tw_delimeter = "-"
+  utils.add_additional_color_chars(tw_delimeter)
+  local data = require("colorizer.data.tailwind_colors")
+  
+  for name, hex in pairs(css_vars.names) do
+    -- Strip leading dashes
+    local name_no_dash = name:match("^%-*(.+)")
+    
+    if name_no_dash then
+      -- Add full name (e.g. color-primary -> bg-color-primary)
+      for _, prefix in ipairs(data.prefixes) do
+         add_color(string.format("%s%s%s", prefix, tw_delimeter, name_no_dash), hex, "css_vars", hash)
+      end
+
+      -- Check for color- prefix and add stripped version (e.g. color-primary -> bg-primary)
+      local stripped = name_no_dash:match("^color%-(.+)") 
+      if stripped then
+        for _, prefix in ipairs(data.prefixes) do
+           add_color(string.format("%s%s%s", prefix, tw_delimeter, stripped), hex, "css_vars", hash)
+        end
+      end
+    end
+  end
+end
+
 --- Populates the Trie and map with colors based on options.
 ---@param m_opts table Configuration options for color names.
 local function populate_colors(m_opts)
@@ -188,6 +227,11 @@ local function populate_colors(m_opts)
   if m_opts.tailwind_names then
     populate_tailwind_names()
     set_namespace("tailwind_names")
+  end
+  -- Add css vars (tailwind style)
+  if m_opts.css_vars then
+    populate_css_vars(m_opts.css_vars)
+    set_namespace("css_vars")
   end
 end
 
@@ -239,6 +283,16 @@ local function resolve_color_entry(prefix, m_opts)
       return color_entry
     end
   end
+  -- Handle css_vars with hash
+  if m_opts.css_vars and m_opts.css_vars.hash then
+    local custom_map = names_cache.color_map.css_vars[m_opts.css_vars.hash]
+    if custom_map then
+      local color_entry = custom_map[prefix]
+      if color_entry then
+        return color_entry
+      end
+    end
+  end
 end
 
 local function needs_population(m_opts)
@@ -258,6 +312,11 @@ local function needs_population(m_opts)
   end
   if m_opts.names_custom and m_opts.names_custom.hash then
     if not names_cache.color_map.names_custom[m_opts.names_custom.hash] then
+      return true
+    end
+  end
+  if m_opts.css_vars and m_opts.css_vars.hash then
+    if not names_cache.color_map.css_vars[m_opts.css_vars.hash] then
       return true
     end
   end

@@ -5,8 +5,42 @@ from the buffer, allowing them to be referenced by the `var()` parser.
 -- @module colorizer.css
 local M = {}
 
+local utils = require("colorizer.utils")
+
 local state = {}
 local global_definitions = {}
+
+--- Get all variables and their hash
+---@param bufnr number
+---@return table: Variables table
+---@return string: Hash of variables
+function M.get_variables(bufnr)
+  -- Use cached result if available
+  if state[bufnr] and state[bufnr].cached_vars and state[bufnr].cached_hash then
+    return state[bufnr].cached_vars, state[bufnr].cached_hash
+  end
+
+  local vars = {}
+  -- Merge global
+  for k, v in pairs(global_definitions) do
+    vars[k] = v
+  end
+  -- Merge local
+  if state[bufnr] and state[bufnr].definitions then
+    for k, v in pairs(state[bufnr].definitions) do
+      vars[k] = v
+    end
+  end
+
+  local hash = utils.hash_table(vars)
+
+  if state[bufnr] then
+    state[bufnr].cached_vars = vars
+    state[bufnr].cached_hash = hash
+  end
+
+  return vars, hash
+end
 
 --- Cleanup css variables
 ---@param bufnr number
@@ -102,6 +136,11 @@ function M.update_variables(
   if line_start == 0 and line_end == -1 then
     state[bufnr].definitions = {}
   end
+  
+  -- Invalidate hash and cache
+  state[bufnr].hash = nil
+  state[bufnr].cached_vars = nil
+  state[bufnr].cached_hash = nil
 
   for _, line in ipairs(lines) do
     -- Match --name: value;
