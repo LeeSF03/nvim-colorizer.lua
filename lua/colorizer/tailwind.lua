@@ -7,6 +7,8 @@ and maintains state for efficient Tailwind highlighting.
 local M = {}
 
 local utils = require("colorizer.utils")
+local css = require("colorizer.css")
+local tw_data = require("colorizer.data.tailwind_colors")
 local tw_ns_id = require("colorizer.constants").namespace.tailwind_lsp
 
 local lsp_cache = {}
@@ -71,6 +73,44 @@ local function highlight(bufnr, ud_opts, add_highlight)
         end
         line_start = line_start or 0
         line_end = line_end and (line_end + 2) or -1
+
+        -- Manual scan for CSS variables (fallback/augmentation)
+        local css_vars = css.get_variables(bufnr)
+        if css_vars and next(css_vars) then
+          local lines = vim.api.nvim_buf_get_lines(bufnr, line_start, line_end, false)
+          for i, line in ipairs(lines) do
+            local lnum = line_start + i - 1
+            for name, hex in pairs(css_vars) do
+               -- Strip leading dashes
+               local name_no_dash = name:match("^%-*(.+)")
+               local targets = {}
+               if name_no_dash then
+                 table.insert(targets, name_no_dash)
+                 local stripped = name_no_dash:match("^color%-(.+)")
+                 if stripped then table.insert(targets, stripped) end
+               end
+               
+               for _, target in ipairs(targets) do
+                 for _, prefix in ipairs(tw_data.prefixes) do
+                   local class = prefix .. "-" .. target
+                   -- Simple find, could be improved with word boundary check
+                   local s, e = line:find(class, 1, true)
+                   while s do
+                     data[lnum] = data[lnum] or {}
+                     -- Check for overlaps? LSP results take precedence usually, but we merge.
+                     -- Convert hex to format without # for consistency with LSP parsing logic above?
+                     -- LSP parsing logic: string.format("%02x...", ...).
+                     -- hex from css.lua might have # or not.
+                     local clean_hex = hex:gsub("^#", "")
+                     table.insert(data[lnum], { rgb_hex = clean_hex, range = { s - 1, e } })
+                     s, e = line:find(class, e + 1, true)
+                   end
+                 end
+               end
+            end
+          end
+        end
+
         lsp_cache[bufnr].data = data
         add_highlight(bufnr, tw_ns_id, line_start, line_end, data, ud_opts, { tailwind_lsp = true })
       end
