@@ -276,13 +276,6 @@ local function resolve_color_entry(prefix, m_opts)
       end
     end
   end
-  -- Handle tailwind_names
-  if m_opts.tailwind_names then
-    local color_entry = names_cache.color_map.tailwind_names[prefix]
-    if color_entry then
-      return color_entry
-    end
-  end
   -- Handle css_vars with hash
   if m_opts.css_vars and m_opts.css_vars.hash then
     local custom_map = names_cache.color_map.css_vars[m_opts.css_vars.hash]
@@ -291,6 +284,13 @@ local function resolve_color_entry(prefix, m_opts)
       if color_entry then
         return color_entry
       end
+    end
+  end
+  -- Handle tailwind_names
+  if m_opts.tailwind_names then
+    local color_entry = names_cache.color_map.tailwind_names[prefix]
+    if color_entry then
+      return color_entry
     end
   end
 end

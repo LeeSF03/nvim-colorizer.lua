@@ -472,7 +472,18 @@ function M.setup(opts)
     -- Create a temporary matcher for global parsing
     -- We need to enable parsers that might be in the global files (RGB, names, etc)
     -- Using the user options seems appropriate
-    local matcher_fn = require("colorizer.matcher").make(s.user_default_options)
+    local variable_parser_opts = {
+      RGB = true,
+      RGBA = true,
+      RRGGBB = true,
+      RRGGBBAA = true,
+      AARRGGBB = true,
+      rgb_fn = true,
+      hsl_fn = true,
+      oklch_fn = true,
+      names = true,
+    }
+    local matcher_fn = require("colorizer.matcher").make(variable_parser_opts)
     css.load_global_variables(s.user_default_options.css_var_user_files, matcher_fn)
   end
 
