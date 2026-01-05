@@ -74,6 +74,7 @@ local buffer = require("colorizer.buffer")
 local config = require("colorizer.config")
 local const = require("colorizer.constants")
 local utils = require("colorizer.utils")
+local css = require("colorizer.css")
 
 --- State and configuration dynamic holding information table tracking
 local colorizer_state = {
@@ -466,6 +467,14 @@ function M.setup(opts)
   require("colorizer.buffer").reset_cache()
 
   local s = config.get_setup_options(opts)
+
+  if s.user_default_options.css_var_user_files then
+    -- Create a temporary matcher for global parsing
+    -- We need to enable parsers that might be in the global files (RGB, names, etc)
+    -- Using the user options seems appropriate
+    local matcher_fn = require("colorizer.matcher").make(s.user_default_options)
+    css.load_global_variables(s.user_default_options.css_var_user_files, matcher_fn)
+  end
 
   -- Setup the buffer with the correct options
   local function bo_type_setup(bo_type)
