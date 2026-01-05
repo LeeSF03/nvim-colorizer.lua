@@ -142,19 +142,44 @@ function M.update_variables(
   state[bufnr].cached_vars = nil
   state[bufnr].cached_hash = nil
 
+  local pending = {}
+  local changed = false
+
+  -- Pass 1: Parse variables, resolving immediate values and collecting deferred ones
   for _, line in ipairs(lines) do
-    -- Match --name: value;
-    -- Value can be complex, but we only care if it starts with a color or is a color.
-    -- We use `color_parser` to check if the value is a color.
     for name, value in line:gmatch("%-%-([%w%-]+)%s*:%s*(.-)%s*[;}]") do
       if color_parser then
-        -- We try to parse the value using the configured color parser
-        -- This handles hex, rgb(), etc.
         local len, rgb_hex = color_parser(value, 1, bufnr)
         if len and rgb_hex then
           state[bufnr].definitions[name] = rgb_hex
+          changed = true
+        else
+          -- If not resolved immediately (e.g. forward ref), store for next pass
+          table.insert(pending, { name = name, value = value })
         end
       end
+    end
+  end
+
+  -- Pass 2: Try to resolve deferred variables
+  -- We repeat this until no new variables are resolved (to handle chains), up to a limit
+  if #pending > 0 and changed then
+    local max_passes = 3
+    local pass = 0
+    while pass < max_passes and changed do
+      changed = false
+      local next_pending = {}
+      for _, entry in ipairs(pending) do
+         local len, rgb_hex = color_parser(entry.value, 1, bufnr)
+         if len and rgb_hex then
+           state[bufnr].definitions[entry.name] = rgb_hex
+           changed = true
+         else
+           table.insert(next_pending, entry)
+         end
+      end
+      pending = next_pending
+      pass = pass + 1
     end
   end
 end

@@ -14,14 +14,10 @@ local css = require("colorizer.css")
 ---@return number|nil: The end index of the match
 ---@return string|nil: The RGB hexadecimal color
 function M.parser(line, i, opts, bufnr)
-  -- Match var(--name)
-  -- Pattern: var%s*%(%s*--([%w%-]+)%s*%)
-  local start_match, end_match, name = line:find("^var%s*%(%s*%-%-([%w%-]+)%s*%)", i)
+  -- Match var(--name) or var(--name, fallback)
+  local start_match, end_match, name = line:find("^var%s*%(%s*%-%-([%w%-]+)[^)]*%)", i)
   
   if not start_match then
-    -- Fallback support? var(--name, fallback)
-    -- This is more complex, let's stick to basic var() first or try to capture comma.
-    -- Pattern with optional fallback: ^var%s*%(%s*%-%-([%w%-]+)%s*[,)]
     return
   end
 
@@ -33,6 +29,9 @@ function M.parser(line, i, opts, bufnr)
   if rgb_hex then
     return end_match, rgb_hex
   end
+  
+  -- TODO: Parse fallback value if variable is missing?
+  -- Regex above captures name but ignores fallback content.
 end
 
 return M
