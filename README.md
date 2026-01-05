@@ -1,6 +1,6 @@
 # colorizer.lua
 
-<!--toc:start-->
+forked from: [catgoose/nvim-colorizer.lua](https://github.com/catgoose/nvim-colorizer.lua)
 
 - [colorizer.lua](#colorizerlua)
   - [Installation and Usage](#installation-and-usage)

@@ -22,6 +22,8 @@ local plugin_user_default_options = {
   rgb_fn = false,
   hsl_fn = false,
   oklch_fn = false,
+  var_fn = false,
+  css_var_user_files = nil,
   css = false,
   css_fn = false,
   tailwind = false,
@@ -196,8 +198,8 @@ end
 function M.apply_alias_options(ud_opts)
   local aliases = {
     --  TODO: 2024-12-24 - Should aliases be configurable?
-    ["css"] = { "names", "RGB", "RGBA", "RRGGBB", "RRGGBBAA", "hsl_fn", "rgb_fn", "oklch_fn" },
-    ["css_fn"] = { "hsl_fn", "rgb_fn", "oklch_fn" },
+    ["css"] = { "names", "RGB", "RGBA", "RRGGBB", "RRGGBBAA", "hsl_fn", "rgb_fn", "oklch_fn", "var_fn" },
+    ["css_fn"] = { "hsl_fn", "rgb_fn", "oklch_fn", "var_fn" },
   }
   local function handle_alias(name, opts)
     if not aliases[name] then
@@ -244,8 +246,10 @@ end
 --   - `rgb_fn` (boolean): Enables CSS `rgb()` and `rgba()` functions.
 --   - `hsl_fn` (boolean): Enables CSS `hsl()` and `hsla()` functions.
 --   - `oklch_fn` (boolean): Enables CSS `oklch()` function.
---   - `css` (boolean): Enables all CSS-related features (e.g., `names`, `RGB`, `RRGGBB`, `hsl_fn`, `rgb_fn`, `oklch_fn`).
---   - `css_fn` (boolean): Enables all CSS function-related features (e.g., `rgb_fn`, `hsl_fn`, `oklch_fn`).
+--   - `var_fn` (boolean): Enables CSS `var()` function.
+--   - `css_var_user_files` (table|nil): List of glob patterns to scan for global CSS variables (e.g. `{"**/*.css"}`).
+--   - `css` (boolean): Enables all CSS-related features (e.g., `names`, `RGB`, `RRGGBB`, `hsl_fn`, `rgb_fn`, `oklch_fn`, `var_fn`).
+--   - `css_fn` (boolean): Enables all CSS function-related features (e.g., `rgb_fn`, `hsl_fn`, `oklch_fn`, `var_fn`).
 --   - `tailwind` (boolean|string): Enables Tailwind CSS colors. Accepts `true`, `"normal"`, `"lsp"`, or `"both"`.
 --   - `tailwind_opts` (table): Tailwind options for updating names cache, etc
 --      - `update_names` (boolean): Updates Tailwind "normal" names cache from LSP results.  This provides a smoother highlighting experience when tailwind = "both" is used.  Highlighting on non-tailwind lsp buffers (like cmp) becomes more consistent.

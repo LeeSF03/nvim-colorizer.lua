@@ -16,6 +16,7 @@ local parsers = {
   rgb_function = require("colorizer.parser.rgb").parser,
   rgba_hex = require("colorizer.parser.rgba_hex").parser,
   oklch_function = require("colorizer.parser.oklch").parser,
+  var_function = require("colorizer.parser.css_var").parser,
   --  TODO: 2024-12-21 - Should this be moved into parsers module?
   sass_name = require("colorizer.sass").parser,
   xterm = require("colorizer.parser.xterm").parser,
@@ -28,6 +29,7 @@ parsers.prefix = {
   ["_hsl"] = parsers.hsl_function,
   ["_hsla"] = parsers.hsl_function,
   ["_oklch"] = parsers.oklch_function,
+  ["_var"] = parsers.var_function,
 }
 
 ---Form a trie stuct with the given prefixes
@@ -80,7 +82,7 @@ local function compile(matchers, matchers_trie, hooks)
     if prefix then
       local fn = "_" .. prefix
       if parsers.prefix[fn] then
-        return parsers.prefix[fn](line, i, matchers[prefix])
+        return parsers.prefix[fn](line, i, matchers[prefix], bufnr)
       end
     end
 
@@ -128,6 +130,7 @@ function M.make(ud_opts)
   local enable_rgb = ud_opts.rgb_fn
   local enable_hsl = ud_opts.hsl_fn
   local enable_oklch = ud_opts.oklch_fn
+  local enable_var = ud_opts.var_fn
   local enable_xterm = ud_opts.xterm
 
   -- Rather than use bit.lshift or calculate 2^x, use precalculated values to
@@ -152,6 +155,7 @@ function M.make(ud_opts)
     + (enable_sass and 65536 or 0)
     + (enable_xterm and 131072 or 0)
     + (enable_oklch and 262144 or 0)
+    + (enable_var and 524288 or 0)
 
   if matcher_mask == 0 then
     return false
@@ -222,6 +226,7 @@ function M.make(ud_opts)
     hsl = enable_hsl,
     rgba = enable_rgb,
     rgb = enable_rgb,
+    var = enable_var,
   }
 
   for prefix, enabled in pairs(css_function_prefixes) do

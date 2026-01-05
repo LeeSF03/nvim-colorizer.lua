@@ -6,6 +6,7 @@ local color = require("colorizer.color")
 local const = require("colorizer.constants")
 local matcher = require("colorizer.matcher")
 local names = require("colorizer.parser.names")
+local css = require("colorizer.css")
 local sass = require("colorizer.sass")
 local tailwind = require("colorizer.tailwind")
 local utils = require("colorizer.utils")
@@ -251,6 +252,20 @@ function M.highlight(bufnr, ns_id, line_start, line_end, ud_opts, buf_local_opts
       -1,
       nil,
       matcher.make(ud_opts.sass.parsers),
+      ud_opts,
+      buf_local_opts
+    )
+  end
+
+  -- only update css variables when text is changed
+  if buf_local_opts.__event ~= "WinScrolled" and ud_opts.var_fn then
+    table.insert(detach.functions, css.cleanup)
+    css.update_variables(
+      bufnr,
+      0,
+      -1,
+      nil,
+      matcher.make(ud_opts),
       ud_opts,
       buf_local_opts
     )
